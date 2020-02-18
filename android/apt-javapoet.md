@@ -21,7 +21,7 @@ public class Main {               //TypeElement 类元素/节点
 ```
 
 ### 1.3、API
-![api](pic/javapoet.png)
+![api](pic/javapoet.jpeg)
 
 ### 1.4、注解的写法
 ```java
