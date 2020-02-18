@@ -1,11 +1,4 @@
----
-title: APT和JavaPoet
-tags: apt javapoet
-categories: Android
----
 
-* TOC
-{:toc}
 
 # 1、基本概念
 
@@ -28,7 +21,7 @@ public class Main {               //TypeElement 类元素/节点
 ```
 
 ### 1.3、API
-![api](../static/img/javapoet.png)
+![api](pic/javapoet.png)
 
 ### 1.4、注解的写法
 ```java
@@ -212,12 +205,12 @@ public class ARouterProcessor extends AbstractProcessor {
 
 #### 4.1、JavaPoet的8个常用类
 
-![api](../static/img/javapoet_8_class.png)
+![api](pic/javapoet_8_class.png)
 
 
 #### 4.2、JavaPoet字符串格式化规则
 
-![api](../static/img/javapoet_format_string.png)
+![api](pic/javapoet_format_string.png)
 
 
 ```java
