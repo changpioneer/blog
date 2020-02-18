@@ -69,7 +69,7 @@ git是分布式版本控制系统，在讲git之前，先来了解下中央式�
 - 暂存区：英文叫stage, 或index。一般存放在 ".git目录下" 下的index文件（.git/index）中，所以我们把暂存区有时也叫作索引（index）
 
 
-![api](pic/1105_git_311.jpeg)
+![api](../pic/1105_git_311.jpeg)
 
 ### 3.1、工作模型
 
