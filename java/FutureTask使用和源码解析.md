@@ -60,6 +60,112 @@
 ```
 这个构造函数会把传入的`Runnable`封装成一个`Callable`对象保存在`callable`字段中，同时如果任务执行成功的话就会返回传入的`result`。这种情况下如果不需要返回值的话可以传入一个`null`。
 
+### 4.2、run方法
+```java
+public void run() {
+    // 1. 状态如果不是NEW，说明任务或者已经执行过，或者已经被取消，直接返回
+    // 2. 状态如果是NEW，则尝试把当前执行线程保存在runner字段中
+    // 如果赋值失败则直接返回
+    if (state != NEW ||
+        !UNSAFE.compareAndSwapObject(this, runnerOffset,
+                                     null, Thread.currentThread()))
+        return;
+    try {
+        Callable<V> c = callable;
+        if (c != null && state == NEW) {
+            V result;
+            boolean ran;
+            try {
+                // 3. 执行任务
+                result = c.call();
+                ran = true;
+            } catch (Throwable ex) {
+                result = null;
+                ran = false;
+                // 4. 任务异常
+                setException(ex);
+            }
+            if (ran)
+                // 4. 任务正常执行完毕
+                set(result);
+        }
+    } finally {
+        runner = null;
+        int s = state;
+        // 5. 如果任务被中断，执行中断处理
+        if (s >= INTERRUPTING)
+            handlePossibleCancellationInterrupt(s);
+    }
+}
+```
+
+### 4.3.1、setException()方法如下：
+```java
+protected void setException(Throwable t) {
+    if (UNSAFE.compareAndSwapInt(this, stateOffset, NEW, COMPLETING)) {
+        outcome = t;
+        UNSAFE.putOrderedInt(this, stateOffset, EXCEPTIONAL); // final state
+        finishCompletion();
+    }
+}
+```
+
+在setException()方法中
+
+- 首先会以原子形式的把当前的状态从`NEW`变更为`COMPLETING`状态。
+- 把异常原因保存在`outcome`字段中，`outcome`字段用来保存任务执行结果或者异常原因。
+- 以原子形式的把当前任务状态从`COMPLETING`变更为`EXCEPTIONAL`。
+调用`finishCompletion()`。关于这个方法后面在分析。
+
+### 4.3.2、set()
+如果任务成功执行则调用set()方法设置执行结果，该方法实现如下:
+```java
+protected void set(V v) {
+    if (UNSAFE.compareAndSwapInt(this, stateOffset, NEW, COMPLETING)) {
+        outcome = v;
+        UNSAFE.putOrderedInt(this, stateOffset, NORMAL); // final state
+        finishCompletion();
+    }
+}
+```
+这个方法跟上面分析的setException()差不多，
+
+- 首先会CAS的把当前的状态从`NEW`变更为`COMPLETING`状态。
+- 把任务执行结果保存在`outcome`字段中。
+- CAS的把当前任务状态从`COMPLETING`变更为`NORMAL`。调用`finishCompletion()`。
+
+## 发起任务线程跟执行任务线程通常情况下都不会是同一个线程，在任务执行线程执行任务的时候，任务发起线程可以查看任务执行状态、获取任务执行结果、取消任务等等操作，接下来分析下这些操作。
+
+### 4.4、get()
+任务发起线程可以调用`get()`方法来获取任务执行结果，如果此时任务已经执行完毕则会直接返回任务结果，如果任务还没执行完毕，则调用方会阻塞直到任务执行结束返回结果为止。`get()`方法实现如下:
+```java
+    public V get() throws InterruptedException, ExecutionException {
+        int s = state;
+        if (s <= COMPLETING)
+            s = awaitDone(false, 0L);
+        return report(s);
+    }
+```
+get()方法实现比较简单，会
+- 判断任务当前的`state <= COMPLETING`是否成立。前面分析过，`COMPLETING`状态是任务是否执行完成的临界状态。
+- 如果成立，表明任务还没有结束(这里的结束包括任务正常执行完毕，任务执行异常，任务被取消)，则会调用`awaitDone()`进行阻塞等待。
+- 如果不成立表明任务已经结束，调用`report()`返回结果。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
